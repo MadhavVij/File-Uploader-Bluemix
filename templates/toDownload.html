@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Download</title>
+</head>
+<body>
+<h1>Select File to Download</h1>
+<ul>
+{% for file in files %}
+    <li><a href="/download/{{ file }}">{{ file }}</a></li>
+{% endfor %}
+</ul>
+
+</body>
+</html>

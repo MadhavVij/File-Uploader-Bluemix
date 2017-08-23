@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Cloudant Upload</title>
+</head>
+<body>
+<h1>Select File to Upload on Cloudant</h1>
+<ul>
+{% for file in files %}
+    <li><a href="/cloudUp/{{ file }}">{{ file }}</a></li>
+{% endfor %}
+</ul>
+</body>
+</html>
