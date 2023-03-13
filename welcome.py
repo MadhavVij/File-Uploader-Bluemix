@@ -111,7 +111,7 @@ def upload():
 
     for dirName, subdirList, fileList in os.walk(root):
         for fname in fileList:
-            file_location = (dirName + "/" + fname)
+            file_location = f"{dirName}/{fname}"
             size = os.path.getsize(file_location)
 
             if fname[-3:] in file_type1:
@@ -124,23 +124,14 @@ def upload():
                     load_file.close()
 
             elif fname[-3:] in file_type2 or fname[-4:] in file_type2:
-                if size <= 200000:
-                    container_name = 'small_img'
-                    Obj_conn = createContainer(container_name)
-                    file_location = (dirName + "/" + fname)
-                    with open(file_location, 'rb') as load_file:
-                        Obj_conn.put_object(container_name, fname, contents=load_file.read(),
-                                            content_type='application/octet-stream')
-                        load_file.close()
+                container_name = 'small_img' if size <= 200000 else 'large_img'
+                Obj_conn = createContainer(container_name)
+                file_location = f"{dirName}/{fname}"
+                with open(file_location, 'rb') as load_file:
+                    Obj_conn.put_object(container_name, fname, contents=load_file.read(),
+                                        content_type='application/octet-stream')
+                    load_file.close()
 
-                elif size>200000:
-                    container_name = 'large_img'
-                    Obj_conn = createContainer(container_name)
-                    file_location = (dirName + "/" + fname)
-                    with open(file_location, 'rb') as load_file:
-                        Obj_conn.put_object(container_name, fname, contents=load_file.read(),
-                                            content_type='application/octet-stream')
-                        load_file.close()
     return 'Upload Successful!'
 
 
@@ -158,10 +149,10 @@ def list_files():
 @app.route('/toDownload')
 def downloadList():
     Obj_conn = createContainer()
-    filenames = []
     container_name = getContainerName(Obj_conn)
-    for data in Obj_conn.get_container(container_name)[1]:
-        filenames.append(data['name'])
+    filenames = [
+        data['name'] for data in Obj_conn.get_container(container_name)[1]
+    ]
     return render_template('toDownload.html', files=filenames)
 
 
@@ -172,7 +163,7 @@ def download(filename):
     file_details = Obj_conn.get_object(container_name, filename)
     with open(app.root_path+'\download.txt', 'wb') as my_copy:
         my_copy.write(file_details[1])
-    return filename + ' Downloaded!'
+    return f'{filename} Downloaded!'
 
 
 @app.route('/toEncrypt')
@@ -188,25 +179,25 @@ def encryptList():
 def encryptFile(userFile):
     key = genKey()
     root = app.root_path
-    f = open(root+'/'+userFile[:-4]+'_key.txt','wb')
+    f = open(f'{root}/{userFile[:-4]}_key.txt', 'wb')
     f.write(key)
     f = Fernet(key)
 
-    for dirName, subdirList, fileList in os.walk(root+'/container/'):
+    for dirName, subdirList, fileList in os.walk(f'{root}/container/'):
         for fname in fileList:
             if userFile == fname:
-                file_location = (dirName + "/" + fname)
+                file_location = f"{dirName}/{fname}"
                 with open(file_location, 'rb') as load_file:
                     token = f.encrypt(load_file.read())
                     load_file.close()
 
-                fname = fname[:-4]+'-crypted'+fname[-4:]
-                new_location = (root + "/encrypted/" + fname)
+                fname = f'{fname[:-4]}-crypted{fname[-4:]}'
+                new_location = f"{root}/encrypted/{fname}"
                 with open(new_location, 'wb') as write_file:
                     write_file.write(token)
                     write_file.close()
 
-    return 'file ' +fname+ ' encrypted'
+    return f'file {fname} encrypted'
 
 
 @app.route('/toDecrypt')
@@ -222,26 +213,26 @@ def decryptionList():
 def decryptFile(userFile):
     root = app.root_path
     userFile = userFile[:-12]+userFile[-4:]
-    f = open(root+'/'+userFile[:-4]+'_key.txt', 'rb')
+    f = open(f'{root}/{userFile[:-4]}_key.txt', 'rb')
     key = f.read()
     g = Fernet(key)
 
-    for dirName, subdirList, fileList in os.walk(root+'/encrypted/'):
+    for dirName, subdirList, fileList in os.walk(f'{root}/encrypted/'):
         for fname in fileList:
-            if userFile[:-4]+'-crypted'+userFile[-4:] == fname:
-                file_location = (dirName + "/" + fname)
+            if f'{userFile[:-4]}-crypted{userFile[-4:]}' == fname:
+                file_location = f"{dirName}/{fname}"
                 with open(file_location, 'rb') as load_file:
                     token = g.decrypt(load_file.read())
                     load_file.close()
 
-                fname = userFile[:-4]+'-decrypted'+userFile[-4:]
-                new_location = (root + "/decrypted/" + fname)
+                fname = f'{userFile[:-4]}-decrypted{userFile[-4:]}'
+                new_location = f"{root}/decrypted/{fname}"
                 print(new_location)
                 with open(new_location, 'wb') as write_file:
                     write_file.write(token)
                     write_file.close()
 
-    return 'file ' +fname+ ' decrypted'
+    return f'file {fname} decrypted'
 
 
 @app.route('/')
@@ -255,13 +246,9 @@ def connectDB():
     user = ''
     password = ''
     db = ''
-    conn = pymysql.connect(
-        host=host,
-        port=port,
-        user=user,
-        password=password,
-        db=db)
-    return conn
+    return pymysql.connect(
+        host=host, port=port, user=user, password=password, db=db
+    )
 
 
 @app.route('/clearUp')
@@ -274,7 +261,7 @@ def uploadFile():
 
     for dirName, subdirList, fileList in os.walk(root):
         for fname in fileList:
-            file_location = (dirName + "/" + fname)
+            file_location = f"{dirName}/{fname}"
             fsize = os.path.getsize(file_location)
 
             if fname[-3:] in file_type1:
@@ -307,7 +294,7 @@ def downloadFile(filename):
     conn.commit()
     curr.close()
     conn.close()
-    return 'Downloaded '+filename
+    return f'Downloaded {filename}'
 
 
 ####################################################
@@ -316,18 +303,18 @@ def ListLocal():
     root = app.root_path
     filenames = []
     zerocount = 0
-    for dirName, subdirList, fileList in os.walk(root+'/container/'):
+    for dirName, subdirList, fileList in os.walk(f'{root}/container/'):
         for fname in fileList:
-            file_location = (dirName + "/" + fname)
+            file_location = f"{dirName}/{fname}"
             size = os.path.getsize(file_location)
             if size == 0:
                 zerocount += 1
-            filenames.append(tuple((fname,size)))
+            filenames.append((fname, size))
     dbName = "datafiles"
     dbName = client[dbName]
     zerocount = [zerocount]
     for filename,size in filenames:
-        file_location = (root+'/container/' + filename)
+        file_location = f'{root}/container/{filename}'
         with open(file_location, 'rb') as load_file:
             data = load_file.read()
         data = data.decode('utf-8')
