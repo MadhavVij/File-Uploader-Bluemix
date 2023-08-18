@@ -1,4 +1,4 @@
-Flask==0.12.2
+Flask==2.2.5
 python-swiftclient==3.3.0
 python-keystoneclient==3.10.0
 python-gnupg==0.4.0
